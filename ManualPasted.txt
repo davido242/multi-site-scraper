@@ -1,0 +1,45 @@
+£
+5
+.56
+Inc Vat
+Was£7.99
+Calex Smart B22 A60 RGB & White LED Light Bulb 9.4W 806lm
+Works with - Amazon Alexa - Google Home - iOS App - Android App
+RGB & White
+Dimmable Via App
+806lm
+Up to 15,000 Hours Life
+Hub Not Required
+
+Specification
+Brand        Calex
+CALC - Light Bulb Technology        LED
+Cap Fitting Type        B22
+Colour Rendering Index        80
+Colour Temperature Description        Colour-Changing
+Colour Temperature Value        2200-4000 K
+Dimmable        Dimmable Via App
+Energy Rating        F
+Frequency Band (Smart)        2412-2472 MHz
+Initial Connection Network        WiFi
+Internet Connection Required        Local Control with Cloud Control Features (Internet Connection Required)
+Life Length        15,000 hours
+Light Bulb Technology        LED
+Light Bulb Type        A60
+Light Colour        RGB & White
+Lm        806 lm
+Lm Band        801-1000
+Manufacturer Guarantee        2 Year Manufacturer's Guarantee (T&Cs Apply)
+Model Name        Smart
+Network Standards (Full)        WiFi
+No. of Bands        Not Applicable
+Pack Size        1
+Pieces in Pack/Case        1
+Power Consumption        9.4 W
+Power Consumption (Band)        7 - 13.9W
+Power Type        Mains-Powered
+Power Voltage Supply        220-240 V
+Product Type        Smart Light Bulb
+Smart Compatibility        Smart
+Smart Hub Requirement        Hub Not Required
+Wireless Range Restrictions        Electronic interference from appliances or physical obstruction, such as brick walls, metal frames and floors, can reduce the wireless range. A signal weakens every time it encounters an obstruction.
