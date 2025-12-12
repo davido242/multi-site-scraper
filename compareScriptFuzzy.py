@@ -91,30 +91,47 @@ def compare_attribute(workflow_val: str, manual_text: str):
 
 # ================= MANUAL ATTRIBUTE EXTRACTION (for missing detection) =================
 
-def extract_manual_attributes(manual_text: str) -> dict:
+def extract_manual_values(manual_text: str) -> set:
     """
-    Detect attributes mentioned in manual text.
-    This is used to find attributes that appear in manual but NOT in workflow.
+    Extract all normalized values from manual text using common patterns.
+    Returns a set of normalized values for comparison.
+    This is more scalable than hardcoded attribute detection.
     """
     manual = normalize_value(manual_text)
-
-    patterns = {
-        "brand": r"\bbrand[: ]+([a-z0-9\s]+)",
-        "wattage": r"(\d+(\.\d+)?w)",
-        "lumens": r"(\d+lm)",
-        "colour temperature": r"(\d{3,4}k|warm white|cool white|daylight)",
-        "cap fitting": r"\b(b22|e27|e14)\b",
-        "dimmable": r"\bdimmable\b",
-        "guarantee": r"(\d+\s*year)",
-    }
-
-    detected = {}
-    for attr_name, pattern in patterns.items():
-        m = re.search(pattern, manual)
-        if m:
-            detected[attr_name] = m.group(0)
-
-    return detected
+    
+    values = set()
+    
+    # Extract numeric-unit patterns (wattage, lumens, temperature, etc.)
+    # Matches: 10w, 9.4w, 800lm, 2700k, 15000 hours, 2 year, etc.
+    numeric_patterns = [
+        r'\d+(?:\.\d+)?w\b',           # Wattage: 10w, 9.4w
+        r'\d+lm\b',                     # Lumens: 800lm
+        r'\d{3,4}k\b',                  # Color temp: 2700k, 4000k
+        r'\d+(?:,\d{3})*\s*hours?\b',  # Hours: 15000 hours, 15,000 hours
+        r'\d+\s*years?\b',              # Years: 2 year, 3 years
+        r'\d+(?:\.\d+)?\s*v\b',         # Voltage: 1.2v, 220v
+        r'\d+(?:\.\d+)?\s*mm\b',        # Dimensions: 119mm
+        r'\d+(?:\.\d+)?\s*g\b',         # Weight: 526g
+        r'\d+(?:\.\d+)?\s*mhz\b',       # Frequency: 2412mhz
+    ]
+    
+    for pattern in numeric_patterns:
+        matches = re.findall(pattern, manual)
+        values.update(matches)
+    
+    # Extract common cap fittings
+    cap_fittings = re.findall(r'\b(b22|e27|e14|gu10|g9|integrated)\b', manual)
+    values.update(cap_fittings)
+    
+    # Extract color descriptions
+    colors = re.findall(r'\b(warm white|cool white|daylight|rgb|blue|red|green)\b', manual)
+    values.update(colors)
+    
+    # Extract dimmable
+    if re.search(r'\bdimmable\b', manual):
+        values.add('dimmable')
+    
+    return values
 
 
 # ================= MAIN COMPARISON ENGINE =================
@@ -162,27 +179,30 @@ def compare(manual_text: str, payload_json: dict) -> str:
                     f"  Workflow: {val_norm}"
                 )
 
-    # ---- 2. Manual → Workflow (missing workflow attributes) ----
-    manual_attrs = extract_manual_attributes(manual_text)
-
-    for attr_name, manual_value in manual_attrs.items():
-        manual_value_norm = normalize_value(manual_value)
-        
-        # Check if this attribute name exists in workflow
-        attr_exists_in_workflow = any(attr_name in k.lower() for k in spec.keys())
-        
-        # Check if this VALUE was already matched (to prevent hallucination)
-        value_already_matched = manual_value_norm in matched_values
-        
-        # Only report as missing if:
-        # 1. Attribute doesn't exist in workflow AND
-        # 2. The value wasn't already matched under a different attribute name
-        if not attr_exists_in_workflow and not value_already_matched:
-            missing.append(
-                f"{attr_name.title()}\n"
-                f"  Manual: {manual_value}\n"
-                f"  Workflow: Not found"
-            )
+    # ---- 2. Manual → Workflow (detect values in manual not found in workflow) ----
+    # Extract all values from manual text
+    manual_values = extract_manual_values(manual_text)
+    
+    # Check which manual values are NOT in the matched workflow values
+    unmatched_manual_values = manual_values - matched_values
+    
+    # Only report genuinely missing values (not just different attribute names)
+    if unmatched_manual_values:
+        # Group similar unmatched values for cleaner reporting
+        for manual_val in sorted(unmatched_manual_values):
+            # Try to fuzzy match against all workflow values to avoid false positives
+            is_similar = False
+            for workflow_val in matched_values:
+                if fuzz.partial_ratio(manual_val, workflow_val) >= 85:
+                    is_similar = True
+                    break
+            
+            if not is_similar:
+                missing.append(
+                    f"Unmatched Manual Value\n"
+                    f"  Manual: {manual_val}\n"
+                    f"  Workflow: Not found"
+                )
 
     # ---- Build Response ----
     parts = []
